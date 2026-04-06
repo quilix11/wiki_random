@@ -7,11 +7,26 @@ headers = {
     'User-Agent': 'MyWikiTestApp/1.0 (learning python)'
 }
 
+file_path = 'history.txt'
+
+
 def get_title():
-    response = requests.get(url, headers=headers)
-    data = response.json()
-    title = data['query']['random'][0]['title']
-    return title
+    while True:
+        response = requests.get(url, headers=headers)
+        data = response.json()
+        title = data['query']['random'][0]['title']
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                existing_title = [line.strip() for line in f.readlines()]
+        except FileNotFoundError:
+            existing_title = []
+        if title in existing_title:
+            continue
+        else:
+            with open(file_path, 'a', encoding='utf-8') as f:
+                f.write(title + '\n')
+                return title
+
 
 def get_page(title):
     url2 = f"https://uk.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext&titles={title}&format=json"
