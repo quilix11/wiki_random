@@ -12,7 +12,7 @@ async def get_content(page):
     prompt = f"Прочитай цей текст {page} і склади 3 питання з варіантами відповідей, не даючи правильних відповідей одразу"
 
     response = await client.aio.models.generate_content(
-        model= 'gemini-3-flash-preview',
+        model= 'gemini-2.5-flash',
         contents=prompt
     )
     return (response.text)
@@ -25,7 +25,7 @@ async def get_answers(page, quiz,answers):
               f"В САМОМУ КІНЦІ своєї відповіді обов'язково напиши тег у форматі: [ОЦІНКА: X/3], де X - це кількість правильних відповідей.")
 
     response = await client.aio.models.generate_content(
-        model= 'gemini-3-flash-preview',
+        model= 'gemini-2.5-flash',
         contents=prompt
     )
     return (response.text)
