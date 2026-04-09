@@ -1,5 +1,8 @@
 import requests
 import sqlite3
+import httpx
+import aiosqlite
+
 
 url = "https://uk.wikipedia.org/w/api.php?action=query&format=json&list=random&rnlimit=1&rnnamespace=0"
 
@@ -32,18 +35,6 @@ def get_title():
             conn.commit()
             conn.close()
             return title
-
-        # try:
-        #     with open(file_path, 'r', encoding='utf-8') as f:
-        #         existing_title = [line.strip() for line in f.readlines()]
-        # except FileNotFoundError:
-        #     existing_title = []
-        # if title in existing_title:
-        #     continue
-        # else:
-        #     with open(file_path, 'a', encoding='utf-8') as f:
-        #         f.write(title + '\n')
-        #         return title
 
 def get_page(title):
     url2 = f"https://uk.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext&titles={title}&format=json"
