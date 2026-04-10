@@ -3,37 +3,60 @@ from services.ai_core import get_content, get_answers
 import re
 import asyncio
 
+
+def is_article_good(title, content):
+    if not title or not content:
+        return False
+
+    clean_content = re.sub(r'\[.*?\]', '', content)
+
+    if len(clean_content) < 600:
+        return False
+
+    bad_words = r"Список|значення|заглушкою"
+    if re.search(bad_words, title, re.I) or re.search(bad_words, clean_content, re.I):
+        return False
+
+    return True
+
+
 async def main():
-    print("Шукаю статтю...")
-    title = await get_title()
-    page = await get_page(title)
-    print(f"Тема: {title}\n")
+    while True:
+        while True:
+            try:
+                title = await get_title()
+                page = await get_page(title)
 
-    print(page)
+                if is_article_good(title, page):
+                    break
+            except Exception:
+                await asyncio.sleep(3)
 
-    try:
-        quiz = await get_content(page)
-        print(quiz)
+        print(title)
 
-        user_response = input("Введіть ваші відповіді: ")
+        try:
+            quiz = await get_content(page)
+            print(quiz)
 
-        check_result = await get_answers(page, quiz, user_response)
-        print("\n--- Результат ---")
-        print(check_result)
+            user_response = input("Відповіді: ")
 
-        match = re.search(r'\[ОЦІНКА:\s*(\d+)/3\]', check_result)
+            if user_response.lower() == 'вихід':
+                return
 
-        if match:
-            score = int(match.group(1))
-            print(f"\nТвій бал: {score} з 3")
+            check_result = await get_answers(page, quiz, user_response)
+            print(check_result)
 
-            await save_score(title, score)
-            print("Гру збережено в базу даних!")
-        else:
-            print("\nНе вдалося знайти оцінку у відповіді ШІ.")
-    except Exception as e:
-        print(e)
-        print("Попробуйте пізніше")
+            match = re.search(r'\[ОЦІНКА:\s*(\d+)/3\]', check_result)
+            if match:
+                score = int(match.group(1))
+                await save_score(title, score)
+
+        except Exception as e:
+            print(e)
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
