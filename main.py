@@ -10,7 +10,7 @@ def is_article_good(title, content):
 
     clean_content = re.sub(r'\[.*?\]', '', content)
 
-    if len(clean_content) < 600:
+    if len(clean_content) < 200:
         return False
 
     bad_words = r"Список|значення|заглушкою"
