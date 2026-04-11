@@ -21,3 +21,5 @@
 docker-compose up -d --build
 ```
  База даних зберігатиметься у папці `database/` на хості.
+## Готова версія у Telegram
+@wikiquizlet_bot
