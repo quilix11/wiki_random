@@ -1,59 +1,82 @@
-from services.wiki_api import get_title, get_page, save_score
-from services.ai_core import get_content, get_answers
-from services.filters import is_article_good
-import re
 import asyncio
+import logging
+import os
+
+from dotenv import load_dotenv
+
+from services.quiz_payload import parse_stored_quiz
+from services.quiz_service import create_new_quiz_round
+from services.wiki_api import save_attempt
+
+load_dotenv()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+CLI_USER_ID = 0
+
+
+def _letters():
+    return ["А", "Б", "В", "Г"]
+
 
 async def main():
-    print("Starting main...")
-    while True:
-        print("Looking for article...")
-        while True:
-            try:
-                print("Getting title...")
-                title = await get_title()
-                print(f"Got title: {title}")
-                
-                print("Getting page...")
-                page = await get_page(title)
-                print(f"Page length: {len(page)}")
-                
-                if is_article_good(title, page):
-                    print("Article is good")
-                    break
-                else:
-                    print("Article not good, trying again")
-            except Exception as e:
-                print(f"Error in getting article: {e}")
-                await asyncio.sleep(3)
+    if not os.getenv("API_KEY"):
+        print("Задай API_KEY у .env для Gemini.")
+        return
 
+    print("Консоль: кожен цикл — новий раунд (3 питання, варіанти 1–4).")
+    while True:
+        print("Створюю раунд (стаття + питання)...")
+        try:
+            session = await create_new_quiz_round()
+        except Exception as e:
+            logger.exception("create_new_quiz_round")
+            print(f"Помилка: {e}")
+            await asyncio.sleep(3)
+            continue
+
+        title = session["title"]
         print(f"\n--- {title} ---")
 
+        payload = parse_stored_quiz(session["quiz"])
+        if not payload:
+            print("Невалідний payload, наступна спроба...")
+            continue
+
+        quiz_id = session["quiz_id"]
+        letters = _letters()
+        picks = []
         try:
-            print("Generating quiz...")
-            quiz = await get_content(page)
-            print("Quiz generated!\n")
-            print(quiz)
+            for i, q in enumerate(payload["questions"]):
+                print(f"\n{i + 1}. {q['text']}")
+                for j, opt in enumerate(q["options"]):
+                    print(f"   {letters[j]}) {opt}")
+                raw = input("Варіант (1–4 або A–D): ").strip().upper()
+                if raw in ("ВИХІД", "Q", "QUIT"):
+                    print("Виходимо...")
+                    return
+                if raw in ("1", "А", "A"):
+                    picks.append(0)
+                elif raw in ("2", "Б", "B"):
+                    picks.append(1)
+                elif raw in ("3", "В", "C"):
+                    picks.append(2)
+                elif raw in ("4", "Г", "D"):
+                    picks.append(3)
+                else:
+                    print("Невідомий варіант, зараховано як помилку.")
+                    picks.append(-1)
 
-            user_response = input("\nВідповіді: ")
-
-            if user_response.lower() == 'вихід':
-                print("Виходимо...")
-                return
-
-            print("Checking answers...")
-            check_result = await get_answers(page, quiz, user_response)
-            print("Answers checked!\n")
-            print(check_result)
-
-            match = re.search(r'\[ОЦІНКА:\s*(\d+)/3\]', check_result)
-            if match:
-                score = int(match.group(1))
-                await save_score(title, score)
-                print(f"Score saved: {score}")
+            correct = [q["correct"] for q in payload["questions"]]
+            score = sum(1 for i, p in enumerate(picks) if p == correct[i])
+            print(f"\nРезультат: {score} з 3")
+            await save_attempt(quiz_id, CLI_USER_ID, score)
+            print(f"Збережено: quiz_id={quiz_id}, score={score}")
 
         except Exception as e:
-            print(f"Error in quiz part: {e}")
+            logger.exception("quiz loop")
+            print(f"Помилка: {e}")
+
 
 if __name__ == "__main__":
     try:
