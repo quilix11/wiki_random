@@ -1,7 +1,7 @@
 import sqlite3
 
 def init_db():
-    conn = sqlite3.connect('../wiki_quiz.db')
+    conn = sqlite3.connect('database/wiki_quiz.db')
     cursor = conn.cursor()
 
     cursor.execute('DROP TABLE IF EXISTS wiki_quiz')

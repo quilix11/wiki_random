@@ -9,7 +9,7 @@ headers = {
     'User-Agent': 'WikiQuizApp/1.0 (test_developer@gmail.com)'
 }
 
-db_path = 'wiki_quiz.db'
+db_path = 'database/wiki_quiz.db'
 
 async def get_title():
 
@@ -34,26 +34,6 @@ async def get_title():
                     return title
 
 
-    # while True:
-    #     response = requests.get(url, headers=headers)
-    #     data = response.json()
-    #     title = data['query']['random'][0]['title']
-    #
-    #     conn = sqlite3.connect(db_path)
-    #     cursor = conn.cursor()
-    #
-    #     cursor.execute("SELECT title FROM wiki_quiz WHERE title = ?", (title,))
-    #     result = cursor.fetchone()
-    #
-    #     if result:
-    #         conn.close()
-    #         continue
-    #     else:
-    #         cursor.execute("INSERT INTO wiki_quiz (title) VALUES (?)", (title,))
-    #         conn.commit()
-    #         conn.close()
-    #         return title
-
 async def get_page(title):
     url2 = f"https://uk.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext&titles={title}&format=json"
 
@@ -65,24 +45,17 @@ async def get_page(title):
         text = first_page['extract']
         return text
 
-    # response = requests.get(url2, headers=headers)
-    # data = response.json()
-    # pages = data['query']['pages']
-    # first_page = list(pages.values())[0]
-    # text = first_page['extract']
-    # return text
-
-
 async def save_score(title, score):
     async with aiosqlite.connect(db_path) as db:
         await db.execute("UPDATE wiki_quiz SET stats = ? WHERE title = ?", (score, title))
         await db.commit()
 
-    # db_path = 'wiki_quiz.db'
-    # conn = sqlite3.connect(db_path)
-    # cursor = conn.cursor()
-    #
-    # cursor.execute("UPDATE wiki_quiz SET stats = ? WHERE title = ?", (score, title))
-    #
-    # conn.commit()
-    # conn.close()
+
+# async def get_score(score):
+#     async with aiosqlite.connect(db_path) as db:
+#         async with db.execute("SELECT title FROM wiki_quiz WHERE stats = ?", (score,)) as cursor:
+#             result = await cursor.fetchall()
+#             if result:
+#                 return [row[0] for row in result]
+#             else:
+#                 return []
