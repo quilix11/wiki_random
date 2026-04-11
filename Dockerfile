@@ -18,9 +18,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Створюємо папку для бази даних та встановлюємо права
-# В Koyeb/Render/etc. корінь проекту зазвичай /app
-# Ми вказуємо шлях за замовчуванням
 ENV DATABASE_URL=/app/database/wiki_quiz.db
+
+# Відкриваємо порт для Health Check
+EXPOSE 7860
 
 # Запускаємо бота
 CMD ["python", "telegram_bot/bot.py"]

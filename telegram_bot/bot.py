@@ -25,6 +25,7 @@ from aiogram.types import (
     Message,
     ReplyKeyboardMarkup,
 )
+from aiohttp import web
 
 from services.quiz_payload import parse_stored_quiz
 from services.quiz_service import create_new_quiz
@@ -547,7 +548,18 @@ async def main() -> None:
     if not BOT_TOKEN:
         raise RuntimeError("Задай TELEGRAM_TOKEN у .env")
     await _configure_bot_profile()
-    await dp.start_polling(bot)
+    
+    # Створюємо простий веб-сервер для Health Check (для Hugging Face/Render)
+    app = web.Application()
+    app.router.add_get("/", lambda r: web.Response(text="Bot is running!"))
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", 7860) # Порт за замовчуванням для HF
+    
+    await asyncio.gather(
+        site.start(),
+        dp.start_polling(bot)
+    )
 
 
 if __name__ == "__main__":
